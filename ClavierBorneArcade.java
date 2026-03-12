@@ -40,8 +40,8 @@ public class ClavierBorneArcade implements KeyListener {
     private boolean sTape;
     private boolean d;
     private boolean dTape;
-    private boolean b;
-    private boolean bTape;
+    // private boolean b;
+    // private boolean bTape;
    
     private boolean k;
     private boolean kTape;

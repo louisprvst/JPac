@@ -3,3 +3,6 @@
 
 # Fichiers de compilations Java
 *.class
+
+# Dossier de MG2D
+MG2D/
