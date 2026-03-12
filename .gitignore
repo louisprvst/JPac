@@ -1,0 +1,5 @@
+# Fichiers MacOs
+.DS_Store
+
+# Fichiers de compilations Java
+*.class
