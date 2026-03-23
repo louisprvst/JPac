@@ -1,7 +1,7 @@
 import MG2D.*;
 import MG2D.geometrie.*;
 
-public class Player {
+public class PlayerWithImage {
     
     // Position dans la grille (en cases, pas en pixels)
     private int gridX;
@@ -15,14 +15,7 @@ public class Player {
     private int offsetX;
     private int offsetY;
     
-    // Sprites du joueur selon la direction
-    private Texture spriteUp;
-    private Texture spriteDown;
-    private Texture spriteLeft;
-    private Texture spriteRight;
-    private Texture spriteActuelle;
-    
-    // Fallback: cercle jaune (en cas d'erreur de chargement d'image)
+    // Forme graphique du joueur (image ou cercle fallback)
     private Cercle forme;
     
     // Vies du joueur
@@ -39,7 +32,7 @@ public class Player {
     private int directionActuelle = -1;
     private int directionDesiree = -1;
     
-    public Player(int startX, int startY, int[][] map, int tailleCase, int offsetX, int offsetY) {
+    public PlayerWithImage(int startX, int startY, int[][] map, int tailleCase, int offsetX, int offsetY) {
         this.gridX = startX;
         this.gridY = startY;
         this.map = map;
@@ -47,30 +40,14 @@ public class Player {
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         
-        // Charger les sprites Pac-Man
-        int pixelX = offsetX + gridX * tailleCase;
-        int pixelY = offsetY + gridY * tailleCase;
-        Point pos = new Point(pixelX, pixelY);
-        
-        try {
-            // Charger les 4 animations directionnelles (frame 1)
-            this.spriteUp = new Texture("assets/pacman-up/1.png", pos);
-            this.spriteDown = new Texture("assets/pacman-down/1.png", pos);
-            this.spriteLeft = new Texture("assets/pacman-left/1.png", pos);
-            this.spriteRight = new Texture("assets/pacman-right/1.png", pos);
-            this.spriteActuelle = this.spriteRight;
-        } catch (Exception e) {
-            System.out.println("Erreur chargement sprites Pac-Man: " + e.getMessage());
-            // Fallback: créer le cercle jaune
-            int centerX = pixelX + tailleCase / 2;
-            int centerY = pixelY + tailleCase / 2;
-            this.forme = new Cercle(Couleur.JAUNE, new Point(centerX, centerY), tailleCase / 2, true);
-        }
+        // Créer le cercle jaune pour Pac-Man
+        int pixelX = offsetX + gridX * tailleCase + tailleCase / 2;
+        int pixelY = offsetY + gridY * tailleCase + tailleCase / 2;
+        this.forme = new Cercle(Couleur.JAUNE, new Point(pixelX, pixelY), tailleCase / 2, true);
     }
     
     // Définir la direction désirée
     public void setDirectionDesiree(int direction) {
-        // 0=haut, 1=bas, 2=gauche, 3=droite, -1=aucun
         this.directionDesiree = direction;
     }
     
@@ -94,17 +71,15 @@ public class Player {
     private boolean essayerDirection(int direction) {
         switch(direction) {
             case 0: // Haut
-                if (peutSeDeplacer(gridX, gridY + 1)) {
-                    gridY++;
-                    if (spriteUp != null) spriteActuelle = spriteUp;
+                if (peutSeDeplacer(gridX, gridY - 1)) {
+                    gridY--;
                     mettreAJourPosition();
                     return true;
                 }
                 break;
             case 1: // Bas
-                if (peutSeDeplacer(gridX, gridY - 1)) {
-                    gridY--;
-                    if (spriteDown != null) spriteActuelle = spriteDown;
+                if (peutSeDeplacer(gridX, gridY + 1)) {
+                    gridY++;
                     mettreAJourPosition();
                     return true;
                 }
@@ -112,7 +87,6 @@ public class Player {
             case 2: // Gauche
                 if (peutSeDeplacer(gridX - 1, gridY)) {
                     gridX--;
-                    if (spriteLeft != null) spriteActuelle = spriteLeft;
                     mettreAJourPosition();
                     return true;
                 }
@@ -120,45 +94,12 @@ public class Player {
             case 3: // Droite
                 if (peutSeDeplacer(gridX + 1, gridY)) {
                     gridX++;
-                    if (spriteRight != null) spriteActuelle = spriteRight;
                     mettreAJourPosition();
                     return true;
                 }
                 break;
         }
         return false;
-    }
-    
-    // Déplacement vers le haut (pour compatibilité)
-    public void deplacerHaut() {
-        if (peutSeDeplacer(gridX, gridY + 1)) {
-            gridY++;
-            mettreAJourPosition();
-        }
-    }
-    
-    // Déplacement vers le bas (pour compatibilité)
-    public void deplacerBas() {
-        if (peutSeDeplacer(gridX, gridY - 1)) {
-            gridY--;
-            mettreAJourPosition();
-        }
-    }
-    
-    // Déplacement vers la gauche (pour compatibilité)
-    public void deplacerGauche() {
-        if (peutSeDeplacer(gridX - 1, gridY)) {
-            gridX--;
-            mettreAJourPosition();
-        }
-    }
-    
-    // Déplacement vers la droite (pour compatibilité)
-    public void deplacerDroite() {
-        if (peutSeDeplacer(gridX + 1, gridY)) {
-            gridX++;
-            mettreAJourPosition();
-        }
     }
     
     // Vérifie si le joueur peut se déplacer à la position (x, y) de la grille
@@ -181,36 +122,14 @@ public class Player {
         }
         
         // Convertir position grille en pixels
-        int pixelX = offsetX + gridX * tailleCase;
-        int pixelY = offsetY + gridY * tailleCase;
-        Point pos = new Point(pixelX, pixelY);
-        
-        // Mettre à jour la position du sprite
-        if (spriteActuelle != null) {
-            spriteActuelle.setA(pos);
-        }
-        
-        // Fallback avec cercle si les sprites ne sont pas chargés
-        if (forme != null) {
-            int centerX = pixelX + tailleCase / 2;
-            int centerY = pixelY + tailleCase / 2;
-            forme.setO(new Point(centerX, centerY));
-        }
+        int pixelX = offsetX + gridX * tailleCase + tailleCase / 2;
+        int pixelY = offsetY + gridY * tailleCase + tailleCase / 2;
+        forme.setO(new Point(pixelX, pixelY));
     }
     
-    // Getter pour la forme graphique (fallback)
+    // Getter pour la forme graphique
     public Cercle getForme() {
         return forme;
-    }
-    
-    // Getter pour le sprite
-    public Texture getSprite() {
-        return spriteActuelle;
-    }
-    
-    // Getter pour vérifier si on a des sprites
-    public boolean hasSpriteActuelle() {
-        return spriteActuelle != null;
     }
     
     // Getters pour les positions
