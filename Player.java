@@ -2,40 +2,33 @@ import MG2D.*;
 import MG2D.geometrie.*;
 
 public class Player {
-    
-    // Position dans la grille (en cases, pas en pixels)
+
     private int gridX;
     private int gridY;
-    
-    // Référence à la map pour vérifier les collisions
+
     private int[][] map;
-    
-    // Constantes pour l'affichage
+
     private int tailleCase;
     private int offsetX;
     private int offsetY;
-    
-    // Sprites du joueur selon la direction
+
     private Texture spriteUp;
     private Texture spriteDown;
     private Texture spriteLeft;
     private Texture spriteRight;
     private Texture spriteActuelle;
-    
-    // Fallback: cercle jaune (en cas d'erreur de chargement d'image)
+
     private Cercle forme;
-    
-    // Vies du joueur
+
     private int vies = 3;
-    
-    // Score du joueur
+
     private int score = 0;
-    
-    // Mode power-up
+
     private boolean powerUpActif = false;
     private int timerPowerUp = 0;
-    
-    // Direction du mouvement (0=haut, 1=bas, 2=gauche, 3=droite, -1=aucun)
+
+    private long invulnerableUntilMs = 0;
+
     private int directionActuelle = -1;
     private int directionDesiree = -1;
     
@@ -47,53 +40,44 @@ public class Player {
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         
-        // Charger les sprites Pac-Man
         int pixelX = offsetX + gridX * tailleCase;
         int pixelY = offsetY + gridY * tailleCase;
         Point pos = new Point(pixelX, pixelY);
-        
+
         try {
-            // Charger les 4 animations directionnelles (frame 1)
-            this.spriteUp = new Texture("assets/pacman-up/1.png", pos);
-            this.spriteDown = new Texture("assets/pacman-down/1.png", pos);
-            this.spriteLeft = new Texture("assets/pacman-left/1.png", pos);
-            this.spriteRight = new Texture("assets/pacman-right/1.png", pos);
+            this.spriteUp = new Texture("assets/pacman_up_1.png", pos);
+            this.spriteDown = new Texture("assets/pacman_down_1.png", pos);
+            this.spriteLeft = new Texture("assets/pacman_left_1.png", pos);
+            this.spriteRight = new Texture("assets/pacman_right_1.png", pos);
             this.spriteActuelle = this.spriteRight;
         } catch (Exception e) {
             System.out.println("Erreur chargement sprites Pac-Man: " + e.getMessage());
-            // Fallback: créer le cercle jaune
             int centerX = pixelX + tailleCase / 2;
             int centerY = pixelY + tailleCase / 2;
             this.forme = new Cercle(Couleur.JAUNE, new Point(centerX, centerY), tailleCase / 2, true);
         }
     }
-    
-    // Définir la direction désirée
+
     public void setDirectionDesiree(int direction) {
-        // 0=haut, 1=bas, 2=gauche, 3=droite, -1=aucun
         this.directionDesiree = direction;
     }
-    
-    // Effectuer le mouvement automatique
+
     public void bouger() {
-        // D'abord essayer la direction désirée
         if(directionDesiree != -1) {
             if(essayerDirection(directionDesiree)) {
                 directionActuelle = directionDesiree;
                 return;
             }
         }
-        
-        // Si la direction désirée ne fonctionne pas, continuer dans la direction actuelle
+
         if(directionActuelle != -1) {
             essayerDirection(directionActuelle);
         }
     }
-    
-    // Essayer de se déplacer dans une direction
+
     private boolean essayerDirection(int direction) {
         switch(direction) {
-            case 0: // Haut
+            case 0:
                 if (peutSeDeplacer(gridX, gridY + 1)) {
                     gridY++;
                     if (spriteUp != null) spriteActuelle = spriteUp;
@@ -101,7 +85,7 @@ public class Player {
                     return true;
                 }
                 break;
-            case 1: // Bas
+            case 1:
                 if (peutSeDeplacer(gridX, gridY - 1)) {
                     gridY--;
                     if (spriteDown != null) spriteActuelle = spriteDown;
@@ -109,7 +93,7 @@ public class Player {
                     return true;
                 }
                 break;
-            case 2: // Gauche
+            case 2:
                 if (peutSeDeplacer(gridX - 1, gridY)) {
                     gridX--;
                     if (spriteLeft != null) spriteActuelle = spriteLeft;
@@ -117,7 +101,7 @@ public class Player {
                     return true;
                 }
                 break;
-            case 3: // Droite
+            case 3:
                 if (peutSeDeplacer(gridX + 1, gridY)) {
                     gridX++;
                     if (spriteRight != null) spriteActuelle = spriteRight;
@@ -128,92 +112,48 @@ public class Player {
         }
         return false;
     }
-    
-    // Déplacement vers le haut (pour compatibilité)
-    public void deplacerHaut() {
-        if (peutSeDeplacer(gridX, gridY + 1)) {
-            gridY++;
-            mettreAJourPosition();
-        }
-    }
-    
-    // Déplacement vers le bas (pour compatibilité)
-    public void deplacerBas() {
-        if (peutSeDeplacer(gridX, gridY - 1)) {
-            gridY--;
-            mettreAJourPosition();
-        }
-    }
-    
-    // Déplacement vers la gauche (pour compatibilité)
-    public void deplacerGauche() {
-        if (peutSeDeplacer(gridX - 1, gridY)) {
-            gridX--;
-            mettreAJourPosition();
-        }
-    }
-    
-    // Déplacement vers la droite (pour compatibilité)
-    public void deplacerDroite() {
-        if (peutSeDeplacer(gridX + 1, gridY)) {
-            gridX++;
-            mettreAJourPosition();
-        }
-    }
-    
-    // Vérifie si le joueur peut se déplacer à la position (x, y) de la grille
+
     private boolean peutSeDeplacer(int x, int y) {
-        // Vérifier les limites de la map
         if (y < 0 || y >= map.length || x < 0 || x >= map[0].length) {
-            return true; // Permet de sortir (pour tunnel latéral style Pac-Man)
+            return true;
         }
-        // Vérifier si ce n'est pas un mur (1 = mur, 0 = passage)
         return map[y][x] == 0;
     }
-    
-    // Met à jour la position graphique du joueur
+
     private void mettreAJourPosition() {
-        // Gérer le tunnel (sortie sur les côtés)
         if (gridX < 0) {
             gridX = map[0].length - 1;
         } else if (gridX >= map[0].length) {
             gridX = 0;
         }
-        
-        // Convertir position grille en pixels
+
         int pixelX = offsetX + gridX * tailleCase;
         int pixelY = offsetY + gridY * tailleCase;
         Point pos = new Point(pixelX, pixelY);
-        
-        // Mettre à jour la position du sprite
+
         if (spriteActuelle != null) {
             spriteActuelle.setA(pos);
         }
-        
-        // Fallback avec cercle si les sprites ne sont pas chargés
+
         if (forme != null) {
             int centerX = pixelX + tailleCase / 2;
             int centerY = pixelY + tailleCase / 2;
             forme.setO(new Point(centerX, centerY));
         }
     }
-    
-    // Getter pour la forme graphique (fallback)
+
     public Cercle getForme() {
         return forme;
     }
-    
-    // Getter pour le sprite
+
     public Texture getSprite() {
         return spriteActuelle;
     }
-    
-    // Getter pour vérifier si on a des sprites
+
     public boolean hasSpriteActuelle() {
         return spriteActuelle != null;
     }
-    
-    // Getters pour les positions
+
     public int getGridX() {
         return gridX;
     }
@@ -221,8 +161,7 @@ public class Player {
     public int getGridY() {
         return gridY;
     }
-    
-    // Gestion des vies
+
     public void perdreVie() {
         vies--;
     }
@@ -234,8 +173,7 @@ public class Player {
     public boolean estMort() {
         return vies <= 0;
     }
-    
-    // Gestion du score
+
     public void ajouterScore(int points) {
         score += points;
     }
@@ -243,22 +181,16 @@ public class Player {
     public int getScore() {
         return score;
     }
-    
-    public void reinitialiserScore() {
-        score = 0;
-    }
-    
-    // Relancer le joueur à une nouvelle position
+
     public void relancer(int newGridX, int newGridY) {
         gridX = newGridX;
         gridY = newGridY;
         mettreAJourPosition();
     }
-    
-    // Gestion du power-up
+
     public void activerPowerUp() {
         powerUpActif = true;
-        timerPowerUp = 100; // 100 * 100ms = 10 secondes
+        timerPowerUp = 100;
     }
     
     public void mettreAJourPowerUp() {
@@ -272,5 +204,13 @@ public class Player {
     
     public boolean isPowerUpActif() {
         return powerUpActif;
+    }
+
+    public void activerInvulnerabilite(int dureeMs) {
+        invulnerableUntilMs = System.currentTimeMillis() + dureeMs;
+    }
+
+    public boolean isInvulnerable() {
+        return System.currentTimeMillis() < invulnerableUntilMs;
     }
 }

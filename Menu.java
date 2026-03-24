@@ -2,16 +2,22 @@ import MG2D.*;
 import MG2D.geometrie.*;
 import java.awt.Font;
 import java.awt.Color;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Menu {
+
+    private static final int NOMBRE_SCORES_AFFICHES = 5;
+    private static final int LARGEUR_FENETRE = 720;
+    private static final int HAUTEUR_FENETRE = 600;
+    private static final int X_CENTRE = LARGEUR_FENETRE / 2;
     
     private Fenetre f;
     private ClavierBorneArcade clavier;
     private boolean playPressed = false;
-    
-    private int largeurBouton = 350;
-    private int hauteurBouton = 90;
-    private int margeSelection = 18;
+    private boolean quitPressed = false;
     
     public Menu(Fenetre f, ClavierBorneArcade clavier) {
         this.f = f;
@@ -22,86 +28,93 @@ public class Menu {
         f.effacer();
         f.setBackground(Color.BLACK);
         
-        // Fond noir
-        Carre fond = new Carre(Couleur.NOIR, new Point(360, 300), 720, true);
+        Carre fond = new Carre(Couleur.NOIR, new Point(LARGEUR_FENETRE / 2, HAUTEUR_FENETRE / 2), LARGEUR_FENETRE, true);
         f.ajouter(fond);
-        
-        // === DÉCORATION: Petits fantômes en haut ===
-        // Fantôme rouge à gauche
-        Cercle fantomeRouge = new Cercle(Couleur.ROUGE, new Point(100, 60), 25, true);
-        f.ajouter(fantomeRouge);
-        
-        // Fantôme bleu au centre
-        Cercle fantomeBleu = new Cercle(Couleur.BLEU, new Point(360, 50), 28, true);
-        f.ajouter(fantomeBleu);
-        
-        // Fantôme orange à droite
-        Cercle fantomeOrange = new Cercle(Couleur.ORANGE, new Point(620, 60), 25, true);
-        f.ajouter(fantomeOrange);
-        
-        // === TITRE "JPac" - ÉNORME et en JAUNE ===
-        Font fontTitre = new Font("Arial", Font.BOLD, 140);
-        Texte titre = new Texte(Couleur.JAUNE, "JPac", fontTitre, new Point(150, 95));
+
+        Font fontTitre = new Font("Arial", Font.BOLD, 110);
+        String texteTitre = "JPAC";
+        Texte titre = new Texte(Couleur.BLEU, texteTitre, fontTitre, new Point(X_CENTRE, 520));
         f.ajouter(titre);
-        
-        // === Sous-titre descriptif ===
-        Font fontDesc = new Font("Arial", Font.BOLD, 22);
-        Texte sousTitre = new Texte(Couleur.CYAN, "Eat the Pellets • Avoid the Ghosts", fontDesc, new Point(80, 240));
-        f.ajouter(sousTitre);
-        
-        // === BOUTON PLAY avec design comme Pong ===
-        int xBouton = (720 - largeurBouton) / 2;
-        int yBouton = 320;
-        
-        // Fond blanc du bouton
-        Rectangle boutonPlay = new Rectangle(Couleur.BLANC, new Point(xBouton, yBouton), largeurBouton, hauteurBouton, true);
-        f.ajouter(boutonPlay);
-        
-        // Sélection (rectangle rouge épais autour du bouton)
-        Rectangle selection = new Rectangle(Couleur.ROUGE, new Point(xBouton - margeSelection, yBouton - margeSelection), 
-                largeurBouton + 2*margeSelection, hauteurBouton + 2*margeSelection, false);
-        f.ajouter(selection);
-        
-        // Texte du bouton PLAY en noir
-        Font fontBouton = new Font("Arial", Font.BOLD, 60);
-        Texte textPlay = new Texte(Couleur.NOIR, "PLAY", fontBouton, new Point(250, 325));
+
+        Font fontPlay = new Font("Arial", Font.BOLD, 30);
+        String textePlay = "PRESS BUTTON 1 FOR PLAY";
+        Texte textPlay = new Texte(Couleur.BLANC, textePlay, fontPlay, new Point(X_CENTRE, 396));
         f.ajouter(textPlay);
-        
-        // === Petites pellets autour du titre pour la décoration ===
-        for (int i = 0; i < 5; i++) {
-            Cercle pellet = new Cercle(Couleur.JAUNE, new Point(50 + i * 140, 290), 4, true);
-            f.ajouter(pellet);
+
+        Font fontQuit = new Font("Arial", Font.PLAIN, 20);
+        Texte textQuit = new Texte(Couleur.CYAN, "PRESS F TO QUIT", fontQuit, new Point(X_CENTRE, 360));
+        f.ajouter(textQuit);
+
+        String[] topScores = chargerTopScores();
+        Font fontLigne = new Font("Arial", Font.BOLD, 28);
+        int yPremierScore = 315;
+        for (int i = 0; i < topScores.length; i++) {
+            String ligne = (i + 1) + ". " + topScores[i];
+            Texte scoreTexte = new Texte(Couleur.BLANC, ligne, fontLigne, new Point(X_CENTRE, yPremierScore - i * 45));
+            f.ajouter(scoreTexte);
         }
-        
-        // === INSTRUCTIONS en bas ===
-        Font fontInstructions = new Font("Arial", Font.PLAIN, 15);
-        Texte instr1 = new Texte(Couleur.ROSE, "Press Y button to start the game", fontInstructions, new Point(185, 460));
-        f.ajouter(instr1);
-        
-        Texte instr2 = new Texte(Couleur.CYAN, "Arrow keys: Move  |  Eat pellets for points", fontInstructions, new Point(110, 485));
-        f.ajouter(instr2);
-        
-        Texte instr3 = new Texte(Couleur.ORANGE, "Yellow circles = Power-ups (10 sec invincibility)", fontInstructions, new Point(85, 510));
-        f.ajouter(instr3);
-        
-        Texte instr4 = new Texte(Couleur.BLANC, "Eat ghosts during power-up = +200 points", fontInstructions, new Point(130, 535));
-        f.ajouter(instr4);
         
         f.rafraichir();
     }
-    
+
+    private String[] chargerTopScores() {
+        String[] top5 = new String[NOMBRE_SCORES_AFFICHES];
+        for (int i = 0; i < NOMBRE_SCORES_AFFICHES; i++) {
+            top5[i] = "AAA-SCORE";
+        }
+        File fichier = new File("highscore");
+
+        if (fichier.exists() && fichier.isFile()) {
+            BufferedReader lecteur = null;
+            try {
+                lecteur = new BufferedReader(new FileReader(fichier));
+                String ligne;
+                int index = 0;
+                while ((ligne = lecteur.readLine()) != null && index < NOMBRE_SCORES_AFFICHES) {
+                    ligne = ligne.trim();
+                    if (ligne.length() == 0) {
+                        continue;
+                    }
+
+                    // Le fichier highscore est deja trie, on lit dans l'ordre.
+                    top5[index] = ligne.toUpperCase();
+                    index++;
+                }
+            } catch (IOException e) {
+                // En cas d'erreur de lecture, on garde simplement un top vide.
+            } finally {
+                if (lecteur != null) {
+                    try {
+                        lecteur.close();
+                    } catch (IOException e) {
+                        // Rien a faire.
+                    }
+                }
+            }
+        }
+
+        return top5;
+    }
+
     public void gererEntree() {
-        // Bouton Y pour lancer le jeu (comme Pong)
         if (clavier.getBoutonJ2YTape()) {
             playPressed = true;
+        }
+        if (clavier.getBoutonJ1ATape()) {
+            quitPressed = true;
         }
     }
     
     public boolean isPlayPressed() {
         return playPressed;
     }
+
+    public boolean isQuitPressed() {
+        return quitPressed;
+    }
     
     public void reset() {
         playPressed = false;
+        quitPressed = false;
     }
 }
