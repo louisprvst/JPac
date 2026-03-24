@@ -159,6 +159,12 @@ public class Graphique {
             pellet.respawn();
         }
     }
+
+    public void respawnPowerUps() {
+        for (PowerUp powerUp : powerUps) {
+            powerUp.reset();
+        }
+    }
     
     public void rafraichir() {
         f.effacer();

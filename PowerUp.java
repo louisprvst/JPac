@@ -36,4 +36,8 @@ public class PowerUp {
         }
         return false;
     }
+
+    public void reset() {
+        mange = false;
+    }
 }
